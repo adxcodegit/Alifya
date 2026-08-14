@@ -271,11 +271,21 @@ h2 em{font-style:normal;color:var(--accent);transition:color 700ms ease}
 
 /* ============ reels ============ */
 .reels{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:20px;align-items:start}
-.reel{position:relative;background:var(--ink-2);border:1px solid var(--line);border-radius:16px;padding:10px;min-height:120px;overflow:hidden}
-.reel blockquote{margin:0 !important;min-width:auto !important;width:100% !important;border-radius:10px !important}
-.reel .fallback{padding:24px 18px;display:grid;gap:12px;justify-items:start}
-.reel .fallback b{font-family:var(--display);font-size:16px;font-weight:700}
-.reel .fallback span{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--mute);word-break:break-all}
+.reel{
+  position:relative;background:var(--ink-2);border:1px solid var(--line);
+  border-radius:18px;overflow:hidden;display:flex;flex-direction:column;
+  transition:transform .45s cubic-bezier(.22,1,.36,1),border-color .45s;
+}
+.reel:hover{transform:translateY(-5px);border-color:color-mix(in srgb,var(--accent) 55%,transparent)}
+.reel-frame{position:relative;height:585px;overflow:hidden;background:#fff}
+.reel-frame iframe{width:100%;height:640px;border:0;display:block}
+.reel-foot{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:13px 16px;border-top:1px solid var(--line);
+  font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--mute);text-decoration:none;transition:color .35s;
+}
+.reel-foot:hover{color:var(--accent)}
 .empty{
   border:1px dashed var(--line);border-radius:16px;padding:34px 26px;color:var(--mute);
   font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;line-height:2;
@@ -390,7 +400,7 @@ footer{
       <div class="bullet-frame" id="photoFrame">
         <div class="photo-drop">
           <span class="ring">+</span>
-          <p>Add photo.jpg<br><span style="opacity:.6">portrait, 3:4</span></p>
+          <p>Add photo.jpeg<br><span style="opacity:.6">portrait, 3:4</span></p>
         </div>
       </div>
       <div class="bullet-cap"></div>
@@ -542,8 +552,10 @@ footer{
    ═══════════════════════════════════════════════════════════════ */
 var CONTENT = {
 
-  /* Put photo.jpg in the same folder as this file. ~1200px wide, portrait. */
-  photo: 'photo.jpg',
+  /* Put your photo in the same folder as this file. ~1200px wide, portrait.
+     .jpeg, .jpg, .png and .webp all work. If the name below doesn't match,
+     the page also auto-tries photo.jpeg / photo.jpg / photo.png / photo.webp. */
+  photo: 'photo.jpeg',
 
   /* Your CV. Keep the PDF in the same folder. */
   resume: 'Alifya_Engineer_Resume_2026.pdf',
@@ -603,9 +615,12 @@ var CONTENT = {
   /* REELS. Paste full Instagram URLs. Public posts only.
      e.g. 'https://www.instagram.com/reel/C1a2B3c4D5e/'          */
   reels: [
-    // 'https://www.instagram.com/reel/DaQXh61vwFq/?igsh=MWp4c2VtMTd1d3Bxeg==&igsi=MWp4c2VtMTd1d3Bxeg==',
-    // 'https://www.instagram.com/reel/C-Kr-O5J0DX/?igsh=MTZlbXo1dGp0c3Jidg==&igsi=MTZlbXo1dGp0c3Jidg==',
-    // 'https://www.instagram.com/reel/DJt3o-sP6i2/?igsh=MW9jNDdyOWg0NnRydg==&igsi=MW9jNDdyOWg0NnRydg=='
+    'https://www.instagram.com/reel/DaQXh61vwFq/',
+    'https://www.instagram.com/reel/DYrxET6t3T6/',
+    'https://www.instagram.com/reel/DWdZhgZgZNh/',
+    'https://www.instagram.com/reel/C-Kr-O5J0DX/',
+    'https://www.instagram.com/reel/DJ6w2s-M-eT/',
+    'https://www.instagram.com/p/DGk5OaWNqRS/',
   ],
 
   /* Numbers in the scrolling bar under the hero. */
@@ -644,13 +659,20 @@ function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, function(c){ ret
 if(CONTENT.linkedin) $('#liLink').setAttribute('href', CONTENT.linkedin);
 
 /* ---------- portrait ---------- */
-if(CONTENT.photo){
-  var img = new Image();
-  img.onload = function(){
-    $('#photoFrame').innerHTML = '<img src="'+esc(CONTENT.photo)+'" alt="Alifya Engineer">';
-  };
-  img.src = CONTENT.photo;
-}
+(function(){
+  var tries = [CONTENT.photo,'photo.jpeg','photo.jpg','photo.png','photo.webp','photo.JPG','photo.JPEG']
+                .filter(function(v,i,a){ return v && a.indexOf(v) === i; });
+  var i = 0;
+  function attempt(){
+    if(i >= tries.length) return;
+    var src = tries[i++];
+    var img = new Image();
+    img.onload = function(){ $('#photoFrame').innerHTML = '<img src="'+esc(src)+'" alt="Alifya Engineer">'; };
+    img.onerror = attempt;
+    img.src = src;
+  }
+  attempt();
+})();
 
 /* ---------- fit the name to its column (measured, not guessed) ---------- */
 (function(){
@@ -754,18 +776,19 @@ if(!codes.length){
 } else {
   var rHtml = '';
   codes.forEach(function(r){
+    var url = 'https://www.instagram.com/reel/' + r + '/';
     rHtml += '<div class="reel">'+
-               '<blockquote class="instagram-media" data-instgrm-permalink="https://www.instagram.com/p/'+r+'/" '+
-               'data-instgrm-version="14" style="background:#150D14;margin:0;padding:0;width:100%">'+
-               '<div class="fallback"><b>Instagram post</b><span>instagram.com/p/'+r+'</span>'+
-               '<a class="btn ghost" href="https://www.instagram.com/p/'+r+'/" target="_blank" rel="noopener">Open on Instagram</a></div>'+
-               '</blockquote></div>';
+               '<div class="reel-frame">'+
+                 '<iframe src="'+url+'embed/" loading="lazy" scrolling="no" allowfullscreen '+
+                 'allow="autoplay; clipboard-write; encrypted-media; picture-in-picture" '+
+                 'title="Instagram reel"></iframe>'+
+               '</div>'+
+               '<a class="reel-foot" href="'+url+'" target="_blank" rel="noopener">'+
+                 '<span>View on Instagram</span><span>&#8599;</span>'+
+               '</a>'+
+             '</div>';
   });
   $('#reelGrid').innerHTML = rHtml;
-  var s = document.createElement('script');
-  s.async = true; s.src = 'https://www.instagram.com/embed.js';
-  s.onload = function(){ try{ window.instgrm.Embeds.process(); }catch(e){} };
-  document.body.appendChild(s);
 }
 
 })();
